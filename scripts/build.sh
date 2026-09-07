@@ -97,6 +97,7 @@ log "Running Nativefier..."
     --single-instance \
     --counter \
     --bounce \
+    --fast-quit \
     --internal-urls ".*"
 
 # Locate generated app
