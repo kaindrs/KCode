@@ -41,4 +41,25 @@
       return origElScrollBy.apply(this, args);
     };
   }
+
+  // Auto-grant notification permission so the Kimi web UI can show native
+  // macOS notifications without a browser prompt. We are wrapping a local,
+  // trusted web server, so this is the expected desktop-app behavior.
+  if (window.Notification) {
+    try {
+      Object.defineProperty(Notification, 'permission', {
+        get: () => 'granted',
+        configurable: true,
+      });
+      Notification.requestPermission = function () {
+        return Promise.resolve('granted');
+      };
+    } catch (err) {
+      // If the browser blocks redefining permission, fall back to a normal
+      // permission request on first load.
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+    }
+  }
 })();
