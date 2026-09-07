@@ -289,7 +289,10 @@ clear_app_cache
 # argument. Nativefier detects a command-line argument starting with `http`
 # and uses it as the target URL override, so we never need to modify the
 # signed app bundle at runtime.
-exec "${SCRIPT_DIR}/$(basename "$0").real" "$TARGET_URL"
+#
+# --disable-smooth-scrolling avoids a flicker/scroll-fight that can happen in
+# long chat threads when the view is pinned to the absolute bottom.
+exec "${SCRIPT_DIR}/$(basename "$0").real" --disable-smooth-scrolling "$TARGET_URL"
 LAUNCHER
 
 chmod +x "${REAL_BIN}"
