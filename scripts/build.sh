@@ -282,25 +282,13 @@ if [[ ! -f "$NATIVIER_JSON" ]]; then
     die "Bundled web app config not found: $NATIVIER_JSON"
 fi
 
-python3 - <<PY
-import json, sys
-path = "$NATIVIER_JSON"
-with open(path, "r") as f:
-    cfg = json.load(f)
-cfg["targetUrl"] = "$TARGET_URL"
-with open(path, "w") as f:
-    json.dump(cfg, f, indent=2)
-PY
-
 clear_app_cache
 
-# Re-sign the bundle after modifying its config. Ad-hoc signing is sufficient
-# for local distribution; Gatekeeper will still need the user to allow the app
-# on first launch.
-codesign --sign - --force --deep "$APP_ROOT" >/dev/null 2>&1 || true
-
-# Hand off to the real Electron binary. `exec` keeps the same PID/Dock entry.
-exec "${SCRIPT_DIR}/$(basename "$0").real"
+# Hand off to the real Electron binary, passing the live URL as the first
+# argument. Nativefier detects a command-line argument starting with `http`
+# and uses it as the target URL override, so we never need to modify the
+# signed app bundle at runtime.
+exec "${SCRIPT_DIR}/$(basename "$0").real" "$TARGET_URL"
 LAUNCHER
 
 chmod +x "${REAL_BIN}"
