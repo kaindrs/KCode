@@ -98,6 +98,8 @@ log "Running Nativefier..."
     --counter \
     --bounce \
     --fast-quit \
+    --inject "${PROJECT_ROOT}/inject/kcode-fix.css" \
+    --inject "${PROJECT_ROOT}/inject/kcode-fix.js" \
     --internal-urls ".*"
 
 # Locate generated app
@@ -289,10 +291,7 @@ clear_app_cache
 # argument. Nativefier detects a command-line argument starting with `http`
 # and uses it as the target URL override, so we never need to modify the
 # signed app bundle at runtime.
-#
-# --disable-smooth-scrolling avoids a flicker/scroll-fight that can happen in
-# long chat threads when the view is pinned to the absolute bottom.
-exec "${SCRIPT_DIR}/$(basename "$0").real" --disable-smooth-scrolling "$TARGET_URL"
+exec "${SCRIPT_DIR}/$(basename "$0").real" "$TARGET_URL"
 LAUNCHER
 
 chmod +x "${REAL_BIN}"

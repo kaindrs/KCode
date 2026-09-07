@@ -1,0 +1,30 @@
+/* KCode — workarounds for bottom-of-chat flicker in Electron/Nativefier. */
+
+/* Force plain (non-smooth) scrolling everywhere so the page's auto-scroll
+   to bottom cannot fight with the compositor. */
+*,
+*::before,
+*::after {
+  scroll-behavior: auto !important;
+  overscroll-behavior: none !important;
+}
+
+/* Disable momentum scrolling on macOS for the main scrollers; this avoids
+   the overshoot/bounce at the bottom that sometimes looks like flicker. */
+html,
+body,
+#app,
+main,
+[role="main"],
+[role="log"],
+[class*="scroll" i],
+[class*="chat" i],
+[class*="message" i] {
+  -webkit-overflow-scrolling: auto !important;
+}
+
+/* Optional: suppress transition/animation on scroll-related properties.
+   Re-enable if it breaks UI; kept narrow to transform/opacity/scroll. */
+* {
+  transition-timing-function: step-end !important;
+}
