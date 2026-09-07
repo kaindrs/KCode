@@ -1,0 +1,30 @@
+{
+  "name": "kcode",
+  "version": "1.0.0",
+  "description": "Native macOS wrapper for the Kimi Code web interface",
+  "private": true,
+  "scripts": {
+    "build": "./scripts/build.sh",
+    "build:ci": "./scripts/build.sh --ci"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kaindrs/KCode.git"
+  },
+  "keywords": [
+    "kimi",
+    "kimi-code",
+    "nativefier",
+    "macos",
+    "electron",
+    "wrapper"
+  ],
+  "author": "kaindrs",
+  "license": "MIT",
+  "devDependencies": {
+    "nativefier": "^52.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

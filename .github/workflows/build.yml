@@ -1,0 +1,70 @@
+name: Build KCode
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Kimi Code base URL'
+        required: false
+        default: 'http://127.0.0.1:58627'
+      token:
+        description: 'Access token (URL fragment)'
+        required: false
+      arch:
+        description: 'Target architecture'
+        required: false
+        default: 'arm64'
+        type: choice
+        options:
+          - arm64
+          - x64
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build app
+        env:
+          KCODE_URL: ${{ github.event.inputs.url || secrets.KCODE_URL || 'http://127.0.0.1:58627' }}
+          KCODE_TOKEN: ${{ github.event.inputs.token || secrets.KCODE_TOKEN || '' }}
+          KCODE_ARCH: ${{ github.event.inputs.arch || 'arm64' }}
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KCode-${{ github.event.inputs.arch || 'arm64' }}
+          path: build/KCode.app
+          if-no-files-found: error
+
+      - name: Package for release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd build
+          ditto -c -k --sequesterRsrc --keepParent KCode.app KCode-macos-${{ github.event.inputs.arch || 'arm64' }}.zip
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/KCode-macos-*.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
