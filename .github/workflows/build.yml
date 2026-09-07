@@ -8,13 +8,6 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      url:
-        description: 'Kimi Code base URL'
-        required: false
-        default: 'http://127.0.0.1:58627'
-      token:
-        description: 'Access token (URL fragment)'
-        required: false
       arch:
         description: 'Target architecture'
         required: false
@@ -42,8 +35,6 @@ jobs:
 
       - name: Build app
         env:
-          KCODE_URL: ${{ github.event.inputs.url || secrets.KCODE_URL || 'http://127.0.0.1:58627' }}
-          KCODE_TOKEN: ${{ github.event.inputs.token || secrets.KCODE_TOKEN || '' }}
           KCODE_ARCH: ${{ github.event.inputs.arch || 'arm64' }}
         run: npm run build
 

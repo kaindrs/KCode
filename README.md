@@ -6,7 +6,16 @@ A native macOS wrapper for the Kimi Code web interface, built with [Nativefier](
 
 ## What it does
 
-KCode turns your local Kimi Code web UI into a standalone `.app` with its own Dock icon, menu bar, and window. The access token is embedded as a URL fragment so you are signed in automatically on launch.
+KCode turns your local Kimi Code web UI into a single standalone `.app` with its own Dock icon, menu bar, and window.
+
+On every launch KCode will:
+
+1. Check whether `kimi web` (or AXIOM's fork-lifted `acode web`) is already running on port `58627`.
+2. If not, start it automatically.
+3. Capture the one-time Local URL including the bearer token.
+4. Open the IDE, already authenticated, in its own window.
+
+Because the URL and token are resolved at runtime, nothing secret is baked into the app bundle.
 
 ## Download
 
@@ -19,6 +28,7 @@ Grab the latest release from the [Releases](https://github.com/kaindrs/KCode/rel
 - macOS
 - Node.js 18+
 - npm
+- `kimi` or `acode` CLI installed (only needed at runtime; the build itself does not start a server)
 
 ### Local build
 
@@ -37,41 +47,22 @@ The built app appears at `build/KCode.app`.
 KCODE_INSTALL=1 npm run build
 ```
 
-### Build straight from `kimi web`
-
-If you have the `kimi` CLI installed, the build script can start `kimi web`, capture the Local URL and token automatically, build the app, and leave the server running:
-
-```bash
-KCODE_FROM_KIMI_WEB=1 KCODE_INSTALL=1 npm run build
-```
-
-The server keeps running after the build so you can launch the app immediately. Stop it later with `Ctrl+C` in the terminal where it started.
-
 ## Configuration
 
 All settings are controlled through environment variables:
 
-| Variable         | Default                         | Description                                      |
-|------------------|---------------------------------|--------------------------------------------------|
-| `KCODE_URL`      | `http://127.0.0.1:58627`        | Base URL of the Kimi Code web interface          |
-| `KCODE_TOKEN`    | —                               | Access token appended as a URL fragment          |
-| `KCODE_NAME`     | `KCode`                         | App display name                                 |
-| `KCODE_BUNDLE_ID`| `ai.kimi.code.kmac`             | macOS bundle identifier                          |
-| `KCODE_ICON`     | `./assets/icon.png`             | Path to a 1024×1024 PNG or SVG icon              |
-| `KCODE_OUTPUT`   | `./build`                       | Directory for the built `.app`                   |
-| `KCODE_ARCH`     | `arm64`                         | Target architecture: `arm64`, `x64`              |
-| `KCODE_INSTALL`        | `0`                             | Set to `1` to copy the app to `~/Applications`         |
-| `KCODE_FROM_KIMI_WEB`   | `0`                             | Set to `1` to derive URL/token from `kimi web` output |
-| `KCODE_KIMI_WEB_PORT`   | `58627`                         | Port to use when starting `kimi web`                   |
-| `KCODE_KIMI_WEB_TIMEOUT`| `30`                            | Seconds to wait for `kimi web` to print its Local URL  |
+| Variable                  | Default                         | Description                                                  |
+|---------------------------|---------------------------------|--------------------------------------------------------------|
+| `KCODE_NAME`              | `KCode`                         | App display name                                             |
+| `KCODE_BUNDLE_ID`         | `ai.kimi.code.kmac`             | macOS bundle identifier                                      |
+| `KCODE_ICON`              | `./assets/icon.png`             | Path to a 1024×1024 PNG or SVG icon                          |
+| `KCODE_OUTPUT`            | `./build`                       | Directory for the built `.app`                               |
+| `KCODE_ARCH`              | `arm64`                         | Target architecture: `arm64`, `x64`                          |
+| `KCODE_INSTALL`           | `0`                             | Set to `1` to copy the app to `~/Applications`               |
+| `KCODE_KIMI_WEB_PORT`     | `58627`                         | Port `kimi web` / `acode web` listens on                     |
+| `KCODE_KIMI_WEB_TIMEOUT`  | `30`                            | Seconds to wait for a fresh server to print its Local URL    |
 
-### Example with a token
-
-```bash
-KCODE_TOKEN="your-token-here" KCODE_INSTALL=1 npm run build
-```
-
-This produces `~/Applications/KCode.app` pointing to `http://127.0.0.1:58627/#token=your-token-here`.
+The launcher also respects `KIMI_CODE_HOME` if your Kimi Code config directory is not in the default `~/.kimi-code` location.
 
 ## First launch
 
@@ -85,10 +76,7 @@ xattr -dr com.apple.quarantine ~/Applications/KCode.app
 
 A GitHub Actions workflow builds the app on every push and pull request. Pushing a tag like `v1.0.0` creates a GitHub Release with a zipped `.app` artifact.
 
-To configure CI builds with your own Kimi Code instance, add these repository secrets in GitHub:
-
-- `KCODE_URL`
-- `KCODE_TOKEN`
+No repository secrets are required: the built app resolves its own URL and token at runtime.
 
 ## Project structure
 
