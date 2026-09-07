@@ -37,6 +37,16 @@ The built app appears at `build/KCode.app`.
 KCODE_INSTALL=1 npm run build
 ```
 
+### Build straight from `kimi web`
+
+If you have the `kimi` CLI installed, the build script can start `kimi web`, capture the Local URL and token automatically, build the app, and leave the server running:
+
+```bash
+KCODE_FROM_KIMI_WEB=1 KCODE_INSTALL=1 npm run build
+```
+
+The server keeps running after the build so you can launch the app immediately. Stop it later with `Ctrl+C` in the terminal where it started.
+
 ## Configuration
 
 All settings are controlled through environment variables:
@@ -50,7 +60,10 @@ All settings are controlled through environment variables:
 | `KCODE_ICON`     | `./assets/icon.png`             | Path to a 1024×1024 PNG or SVG icon              |
 | `KCODE_OUTPUT`   | `./build`                       | Directory for the built `.app`                   |
 | `KCODE_ARCH`     | `arm64`                         | Target architecture: `arm64`, `x64`              |
-| `KCODE_INSTALL`  | `0`                             | Set to `1` to copy the app to `~/Applications`   |
+| `KCODE_INSTALL`        | `0`                             | Set to `1` to copy the app to `~/Applications`         |
+| `KCODE_FROM_KIMI_WEB`   | `0`                             | Set to `1` to derive URL/token from `kimi web` output |
+| `KCODE_KIMI_WEB_PORT`   | `58627`                         | Port to use when starting `kimi web`                   |
+| `KCODE_KIMI_WEB_TIMEOUT`| `30`                            | Seconds to wait for `kimi web` to print its Local URL  |
 
 ### Example with a token
 

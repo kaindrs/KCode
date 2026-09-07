@@ -12,7 +12,10 @@ set -euo pipefail
 #   KCODE_ICON       Path to a 1024x1024 PNG/SVG icon (default: ./assets/icon.png)
 #   KCODE_OUTPUT     Where to place the built .app (default: ./build)
 #   KCODE_ARCH       Target architecture: arm64, x64, or universal (default: arm64)
-#   KCODE_INSTALL    Set to "1" to also copy the app to ~/Applications
+#   KCODE_INSTALL          Set to "1" to also copy the app to ~/Applications
+#   KCODE_FROM_KIMI_WEB    Set to "1" to start `kimi web` and derive URL/token from its output
+#   KCODE_KIMI_WEB_PORT    Port to use when starting `kimi web` (default: 58627)
+#   KCODE_KIMI_WEB_TIMEOUT Seconds to wait for `kimi web` to print its Local URL (default: 30)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -25,6 +28,9 @@ KCODE_ICON="${KCODE_ICON:-${PROJECT_ROOT}/assets/icon.png}"
 KCODE_OUTPUT="${KCODE_OUTPUT:-${PROJECT_ROOT}/build}"
 KCODE_ARCH="${KCODE_ARCH:-arm64}"
 KCODE_INSTALL="${KCODE_INSTALL:-0}"
+KCODE_FROM_KIMI_WEB="${KCODE_FROM_KIMI_WEB:-0}"
+KCODE_KIMI_WEB_PORT="${KCODE_KIMI_WEB_PORT:-58627}"
+KCODE_KIMI_WEB_TIMEOUT="${KCODE_KIMI_WEB_TIMEOUT:-30}"
 
 BUILD_DIR="${KCODE_OUTPUT}/.nativefier"
 APP_BUNDLE="${KCODE_OUTPUT}/${KCODE_NAME}.app"
@@ -41,6 +47,64 @@ log() {
 # Validate platform
 if [[ "$(uname -s)" != "Darwin" ]]; then
     die "This script must run on macOS."
+fi
+
+# Start `kimi web` and parse its Local URL / token.
+derive_from_kimi_web() {
+    if ! command -v kimi >/dev/null 2>&1; then
+        die "kimi CLI not found in PATH. Install it first: https://kimi-code.com/"
+    fi
+
+    # Check whether a Kimi server is already running on the chosen port.
+    if curl -s "http://127.0.0.1:${KCODE_KIMI_WEB_PORT}/" >/dev/null 2>&1; then
+        die "A Kimi server is already running on port ${KCODE_KIMI_WEB_PORT}. Stop it first so we can capture a fresh token."
+    fi
+
+    local logfile
+    logfile="$(mktemp /tmp/kcode-kimi-web.XXXXXX)"
+    log "Starting 'kimi web' on port ${KCODE_KIMI_WEB_PORT} to capture URL and token..."
+
+    # Start `kimi web` in the background and redirect output to the log file.
+    (kimi web --port "${KCODE_KIMI_WEB_PORT}" >"${logfile}" 2>&1) &
+    local kimi_pid=$!
+
+    # Wait for the "Local:" line.
+    local elapsed=0
+    local local_line=""
+    while [[ ${elapsed} -lt ${KCODE_KIMI_WEB_TIMEOUT} ]]; do
+        if [[ -f "${logfile}" ]]; then
+            local_line="$(grep -E '^\s*Local:' "${logfile}" | head -n 1 || true)"
+            if [[ -n "${local_line}" ]]; then
+                break
+            fi
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    if [[ -z "${local_line}" ]]; then
+        # Clean up the background process if it never printed the URL.
+        kill "${kimi_pid}" >/dev/null 2>&1 || true
+        wait "${kimi_pid}" >/dev/null 2>&1 || true
+        die "Timed out waiting for 'kimi web' to print its Local URL."
+    fi
+
+    # Extract URL and token from e.g.:
+    # Local:    http://127.0.0.1:58627/#token=7d7j1A7efJxMMJK6ERsn-kbJwweEKSR12k3-xd1q1mI
+    local raw_url
+    raw_url="$(echo "${local_line}" | sed -E 's/^.*Local:[[:space:]]+//' | tr -d '[:space:]')"
+
+    KCODE_URL="${raw_url%%#token=*}"
+    if [[ "${raw_url}" == *"#token="* ]]; then
+        KCODE_TOKEN="${raw_url##*#token=}"
+    fi
+
+    log "Derived URL and token from 'kimi web'. Server left running (PID ${kimi_pid})."
+    log "  URL:   ${KCODE_URL}"
+}
+
+if [[ "${KCODE_FROM_KIMI_WEB}" == "1" ]]; then
+    derive_from_kimi_web
 fi
 
 # Resolve target URL
